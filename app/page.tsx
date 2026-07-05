@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
+import { isAuthed } from "@/lib/auth";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { getActiveFast } from "@/lib/fasts";
 import AppShell from "@/components/AppShell";
 import TimerScreen from "@/components/timer/TimerScreen";
@@ -7,13 +8,9 @@ import TimerScreen from "@/components/timer/TimerScreen";
 export const dynamic = "force-dynamic";
 
 export default async function TimerPage() {
-  const supabase = createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
+  if (!isAuthed()) redirect("/login");
 
-  const active = await getActiveFast(supabase);
+  const active = await getActiveFast(createAdminClient());
 
   return (
     <AppShell>

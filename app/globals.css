@@ -302,6 +302,13 @@ input {
   font-size: 14px;
 }
 
+.pin-input {
+  text-align: center;
+  font-size: 24px;
+  letter-spacing: 0.4em;
+  font-variant-numeric: tabular-nums;
+}
+
 .login-sent {
   display: flex;
   flex-direction: column;

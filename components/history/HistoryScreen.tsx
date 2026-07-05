@@ -1,8 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { createClient } from "@/lib/supabase/client";
-import { deleteFast } from "@/lib/fasts";
+import { deleteFastAction } from "@/app/actions";
 import type { Fast } from "@/lib/types";
 import { computeStats } from "@/lib/stats";
 import { formatDate } from "@/lib/time";
@@ -11,7 +10,6 @@ import FastList from "./FastList";
 import DeleteConfirm from "./DeleteConfirm";
 
 export default function HistoryScreen({ initialFasts }: { initialFasts: Fast[] }) {
-  const supabase = useMemo(() => createClient(), []);
   const [fasts, setFasts] = useState<Fast[]>(initialFasts);
   const [pendingDelete, setPendingDelete] = useState<Fast | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -25,7 +23,7 @@ export default function HistoryScreen({ initialFasts }: { initialFasts: Fast[] }
     if (!pendingDelete) return;
     const id = pendingDelete.id;
     try {
-      await deleteFast(supabase, id);
+      await deleteFastAction(id);
       setFasts((prev) => prev.filter((f) => f.id !== id));
       setPendingDelete(null);
     } catch (e) {

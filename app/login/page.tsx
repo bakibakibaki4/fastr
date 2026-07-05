@@ -1,34 +1,34 @@
 "use client";
 
 import { useState } from "react";
-import { createClient } from "@/lib/supabase/client";
+import { useRouter } from "next/navigation";
 
 export default function LoginPage() {
-  const [email, setEmail] = useState("");
-  const [status, setStatus] = useState<"idle" | "sending" | "sent" | "error">(
-    "idle",
-  );
+  const router = useRouter();
+  const [pin, setPin] = useState("");
+  const [status, setStatus] = useState<"idle" | "checking" | "error">("idle");
   const [error, setError] = useState<string | null>(null);
 
-  async function sendLink(e: React.FormEvent) {
+  async function submit(e: React.FormEvent) {
     e.preventDefault();
-    if (!email) return;
-    setStatus("sending");
+    if (!pin) return;
+    setStatus("checking");
     setError(null);
 
-    const supabase = createClient();
-    const { error } = await supabase.auth.signInWithOtp({
-      email,
-      options: {
-        emailRedirectTo: `${window.location.origin}/auth/callback`,
-      },
+    const res = await fetch("/api/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ pin }),
     });
 
-    if (error) {
-      setError(error.message);
-      setStatus("error");
+    if (res.ok) {
+      router.replace("/");
+      router.refresh();
     } else {
-      setStatus("sent");
+      const body = await res.json().catch(() => ({}));
+      setError(body.error ?? "Wrong PIN");
+      setStatus("error");
+      setPin("");
     }
   }
 
@@ -39,51 +39,25 @@ export default function LoginPage() {
           <span className="brand-dot" />
           Fastr
         </div>
-
-        {status === "sent" ? (
-          <div className="login-sent">
-            <h1>Check your email</h1>
-            <p className="muted">
-              We sent a magic link to <strong>{email}</strong>. Open it on this
-              device to sign in.
-            </p>
-            <button
-              className="btn-ghost"
-              onClick={() => {
-                setStatus("idle");
-                setEmail("");
-              }}
-            >
-              Use a different email
-            </button>
-          </div>
-        ) : (
-          <form onSubmit={sendLink}>
-            <h1>Sign in</h1>
-            <p className="muted">
-              Enter your email and we&apos;ll send you a magic link — no
-              password needed.
-            </p>
-            <input
-              className="input"
-              type="email"
-              inputMode="email"
-              autoComplete="email"
-              placeholder="you@example.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-            />
-            {error && <p className="login-error">{error}</p>}
-            <button
-              className="btn-primary"
-              type="submit"
-              disabled={status === "sending"}
-            >
-              {status === "sending" ? "Sending…" : "Send magic link"}
-            </button>
-          </form>
-        )}
+        <form onSubmit={submit}>
+          <h1>Enter PIN</h1>
+          <p className="muted">Enter your passcode to unlock the app.</p>
+          <input
+            className="input pin-input"
+            type="password"
+            inputMode="numeric"
+            autoComplete="off"
+            autoFocus
+            placeholder="••••"
+            value={pin}
+            onChange={(e) => setPin(e.target.value)}
+            required
+          />
+          {error && <p className="login-error">{error}</p>}
+          <button className="btn-primary" type="submit" disabled={status === "checking"}>
+            {status === "checking" ? "Checking…" : "Unlock"}
+          </button>
+        </form>
       </div>
     </main>
   );

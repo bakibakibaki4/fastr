@@ -1,13 +1,12 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
-import { createClient } from "@/lib/supabase/client";
+import { useEffect, useState } from "react";
 import {
-  startFast,
-  endFast,
-  updateStartTime,
-  getActiveFast,
-} from "@/lib/fasts";
+  startFastAction,
+  endFastAction,
+  updateStartAction,
+  getActiveFastAction,
+} from "@/app/actions";
 import type { Fast } from "@/lib/types";
 import {
   elapsedMs as calcElapsed,
@@ -24,7 +23,6 @@ import EditStartTimeSheet from "./EditStartTimeSheet";
 import EndFastSheet from "./EndFastSheet";
 
 export default function TimerScreen({ initialActive }: { initialActive: Fast | null }) {
-  const supabase = useMemo(() => createClient(), []);
   const [active, setActive] = useState<Fast | null>(initialActive);
   const [targetHours, setTargetHours] = useState(16);
   const [now, setNow] = useState(() => Date.now());
@@ -43,10 +41,9 @@ export default function TimerScreen({ initialActive }: { initialActive: Fast | n
   }, [active]);
 
   // Re-sync active fast when the tab regains focus (cross-device consistency).
-  const supaRef = useRef(supabase);
   useEffect(() => {
     function onFocus() {
-      getActiveFast(supaRef.current)
+      getActiveFastAction()
         .then((f) => setActive(f))
         .catch(() => {});
     }
@@ -62,11 +59,11 @@ export default function TimerScreen({ initialActive }: { initialActive: Fast | n
     setBusy(true);
     setError(null);
     try {
-      const fast = await startFast(supabase, targetHours, new Date().toISOString());
+      const fast = await startFastAction(targetHours, new Date().toISOString());
       setActive(fast);
     } catch (e) {
       // Likely the partial-unique index (a fast already running elsewhere).
-      const refreshed = await getActiveFast(supabase).catch(() => null);
+      const refreshed = await getActiveFastAction().catch(() => null);
       if (refreshed) setActive(refreshed);
       else setError(e instanceof Error ? e.message : "Could not start fast");
     } finally {
@@ -78,7 +75,7 @@ export default function TimerScreen({ initialActive }: { initialActive: Fast | n
     if (!active) return;
     setBusy(true);
     try {
-      await endFast(supabase, active.id, new Date().toISOString());
+      await endFastAction(active.id, new Date().toISOString());
       setActive(null);
       setEndingFast(false);
     } catch (e) {
@@ -90,7 +87,7 @@ export default function TimerScreen({ initialActive }: { initialActive: Fast | n
 
   async function handleEditStart(newStartIso: string) {
     if (!active) return;
-    const updated = await updateStartTime(supabase, active.id, newStartIso);
+    const updated = await updateStartAction(active.id, newStartIso);
     setActive(updated);
   }
 

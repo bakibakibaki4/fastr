@@ -1,6 +1,5 @@
 export type Fast = {
   id: string;
-  user_id: string;
   start_at: string; // UTC ISO
   end_at: string | null; // UTC ISO, null = in progress
   target_hours: number;
