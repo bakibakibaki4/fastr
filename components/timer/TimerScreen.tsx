@@ -14,6 +14,7 @@ import {
   targetMs,
   formatHMS,
   formatClock,
+  formatDate,
   projectedEnd,
   progressFraction,
 } from "@/lib/time";
@@ -222,6 +223,17 @@ function IdleState({
   onStart: () => void;
   busy: boolean;
 }) {
+  // Live "ends at" preview: recompute each minute so it stays current while
+  // the user lingers on the start screen.
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 30_000);
+    return () => clearInterval(id);
+  }, []);
+
+  const previewEnd = new Date(now + targetMs(targetHours));
+  const crossesDay = previewEnd.getDate() !== new Date(now).getDate();
+
   return (
     <div className="idle">
       <div className="idle-hero">
@@ -230,6 +242,14 @@ function IdleState({
       </div>
 
       <SchedulePicker targetHours={targetHours} onChange={onChangeTarget} disabled={busy} />
+
+      <div className="idle-preview">
+        <span className="faint">If you start now, ends at</span>
+        <strong>
+          {formatClock(previewEnd)}
+          {crossesDay ? ` · ${formatDate(previewEnd)}` : ""}
+        </strong>
+      </div>
 
       <button className="btn-primary" onClick={onStart} disabled={busy}>
         {busy ? "Starting…" : `Start ${targetHours}h fast`}
