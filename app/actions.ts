@@ -1,5 +1,6 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
 import { isAuthed } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 import {
@@ -22,6 +23,12 @@ function guard() {
   return createAdminClient();
 }
 
+/** Bust the client Router Cache for both screens after a mutation. */
+function revalidateScreens() {
+  revalidatePath("/");
+  revalidatePath("/history");
+}
+
 export async function getActiveFastAction(): Promise<Fast | null> {
   return getActiveFast(guard());
 }
@@ -34,20 +41,27 @@ export async function startFastAction(
   targetHours: number,
   startAtIso: string,
 ): Promise<Fast> {
-  return startFast(guard(), targetHours, startAtIso);
+  const fast = await startFast(guard(), targetHours, startAtIso);
+  revalidateScreens();
+  return fast;
 }
 
 export async function endFastAction(id: string, endAtIso: string): Promise<Fast> {
-  return endFast(guard(), id, endAtIso);
+  const fast = await endFast(guard(), id, endAtIso);
+  revalidateScreens();
+  return fast;
 }
 
 export async function updateStartAction(
   id: string,
   startAtIso: string,
 ): Promise<Fast> {
-  return updateStartTime(guard(), id, startAtIso);
+  const fast = await updateStartTime(guard(), id, startAtIso);
+  revalidateScreens();
+  return fast;
 }
 
 export async function deleteFastAction(id: string): Promise<void> {
-  return deleteFast(guard(), id);
+  await deleteFast(guard(), id);
+  revalidateScreens();
 }
